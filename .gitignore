@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+dist-ssr/
+build/
+*.local
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Testing
+coverage/
+playwright-report/
+blob-report/
+test-results/
+.playwright/
+/tests/e2e/.auth/
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+supabase/logs/
+
+# Vercel
+.vercel/
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Caches
+.eslintcache
+.tsbuildinfo
+*.tsbuildinfo
+.cache/
+
+# Working documents (not part of the submitted source)
+/docs/
