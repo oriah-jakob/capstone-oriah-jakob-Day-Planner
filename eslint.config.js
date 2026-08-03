@@ -44,6 +44,16 @@ export default tseslint.config(
     },
   },
 
+  // Vendored shadcn/ui primitives. They intentionally export both a component
+  // and its cva variants from one file, which trips the fast-refresh rule.
+  // Kept narrow so the rule still applies to everything we author.
+  {
+    files: ['src/components/ui/**/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+
   // Config files run in Node and are outside the app tsconfig project.
   {
     files: ['*.config.{js,ts}', 'eslint.config.js'],
