@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test'
 
 import { expectNoAccessibilityViolations } from './utils/a11y'
+import { registerUser } from './utils/auth'
+
+// The app shell sits behind the route guard from week 3, so every test here
+// needs a signed-in user before it can see it.
+test.beforeEach(async ({ page }) => {
+  await registerUser(page)
+})
 
 const PAGES = [
   { link: 'My Tasks', heading: 'My Tasks', path: '/tasks' },
@@ -42,7 +49,12 @@ test.describe('application shell', () => {
   })
 
   test('exposes a skip link as the first focusable element', async ({ page }) => {
+    // A fresh load, so focus starts at the top of the document rather than
+    // wherever the sign-in flow left it. Wait for the shell to replace the
+    // auth-loading placeholder, otherwise Tab fires before the link exists.
     await page.goto('/')
+    await expect(page.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible()
+
     await page.keyboard.press('Tab')
 
     const skipLink = page.getByRole('link', { name: 'Skip to main content' })
