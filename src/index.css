@@ -1,0 +1,133 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Palette is stated in hex rather than oklch so the contrast ratios can be
+ * verified directly against NFR-10 (WCAG 1.4.3). Every foreground/background
+ * pair below is >= 4.5:1. See tests/unit/theme-contrast.test.ts.
+ */
+:root {
+  --radius: 0.625rem;
+
+  --background: #f4f7fb;
+  --foreground: #0f1b2d;
+
+  --card: #ffffff;
+  --card-foreground: #0f1b2d;
+
+  --popover: #ffffff;
+  --popover-foreground: #0f1b2d;
+
+  --primary: #1b6fc0;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e8eff7;
+  --secondary-foreground: #143a63;
+
+  --muted: #e8eff7;
+  --muted-foreground: #48586e;
+
+  --accent: #dce9f7;
+  --accent-foreground: #143a63;
+
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+
+  --success: #146c46;
+  --success-foreground: #ffffff;
+
+  --border: #d3dfec;
+  --input: #b9c9db;
+  --ring: #1b6fc0;
+}
+
+.dark {
+  --background: #0d1520;
+  --foreground: #eef4fb;
+
+  --card: #141f2e;
+  --card-foreground: #eef4fb;
+
+  --popover: #141f2e;
+  --popover-foreground: #eef4fb;
+
+  --primary: #67aef0;
+  --primary-foreground: #0b1420;
+
+  --secondary: #1e2c3f;
+  --secondary-foreground: #eef4fb;
+
+  --muted: #1e2c3f;
+  --muted-foreground: #a8bcd2;
+
+  --accent: #24354b;
+  --accent-foreground: #eef4fb;
+
+  --destructive: #f0787d;
+  --destructive-foreground: #0b1420;
+
+  --success: #5fc79a;
+  --success-foreground: #0b1420;
+
+  --border: #2a3b52;
+  --input: #35485f;
+  --ring: #67aef0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    /*
+     * NFR-11 (WCAG 1.4.4): never set a px-based root font size, so browser
+     * zoom and user font-size preferences scale the whole layout.
+     */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family:
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
