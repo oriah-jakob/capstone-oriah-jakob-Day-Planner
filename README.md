@@ -44,14 +44,15 @@ the schema by clicking around a dashboard.
 
 ### Environment variables
 
-| Variable                 | Purpose                                                     |
-| ------------------------ | ----------------------------------------------------------- |
-| `VITE_SUPABASE_URL`      | Supabase API URL                                            |
-| `VITE_SUPABASE_ANON_KEY` | Publishable key; only grants what row level security allows |
-| `VITE_APP_URL`           | Base URL used to build password reset links                 |
+| Variable                    | Purpose                                                             |
+| --------------------------- | ------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`         | Supabase API URL                                                    |
+| `VITE_SUPABASE_ANON_KEY`    | Publishable key; only grants what row level security allows         |
+| `VITE_APP_URL`              | Base URL used to build password reset links                         |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server side only. Writes the audit log; bypasses row level security |
 
-Anything prefixed `VITE_` is compiled into the browser bundle. The service role key
-must never appear in this file.
+Anything prefixed `VITE_` is compiled into the browser bundle, so the service role key
+deliberately has no prefix and is read only by the `api/` handlers.
 
 ## Scripts
 
@@ -76,11 +77,16 @@ must never appear in this file.
 
 ```
 .github/workflows/   CI (lint, typecheck, unit) and E2E (Playwright, axe)
+api/                 Vercel serverless functions
+  _lib/              shared request, cookie, Supabase, and audit helpers
+  auth/              register, login, refresh, logout, password reset
+plugins/             Vite plugin that serves api/ in dev and preview
 src/
   app/               router, providers, navigation config
   components/        layout, shared components, ui/ (shadcn primitives)
+  features/auth/     auth context, provider, route guards
   hooks/             shared React hooks
-  lib/               framework-agnostic helpers
+  lib/               framework-agnostic helpers, validation schemas
   routes/            one file per page
 supabase/
   migrations/        versioned schema; the source of truth
@@ -88,6 +94,22 @@ tests/
   unit/              Vitest
   e2e/               Playwright, one spec per functional requirement
 ```
+
+### How authentication is wired
+
+Sessions use a split-token design so NFR-3 can be met literally. The refresh token
+is set by the `api/auth/*` functions into a cookie marked `HttpOnly`, `Secure`,
+`SameSite=Lax` and scoped to `/api/auth`; script cannot read it. The access token is
+returned in the response body and held only in a module variable, never in
+`localStorage` or a readable cookie, so a closed tab ends the session and an injected
+script finds no persisted credential. `src/lib/supabase.ts` hands that in-memory token
+to Supabase through the `accessToken` callback, which is why `supabase.auth.*` must
+not be called on that client.
+
+Because Vite does not run Vercel functions, `plugins/api-routes.ts` mounts the same
+handlers during `npm run dev` and `npm run preview`. The handlers are imported
+directly and Node strips the types, so every import inside `api/` is relative and
+carries an explicit `.ts` extension.
 
 ## Testing
 
