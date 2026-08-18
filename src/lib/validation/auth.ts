@@ -38,7 +38,7 @@ export const emailSchema = z
   .pipe(z.email('Enter a valid email address.'))
   .transform((value) => value.toLowerCase())
 
-const nameSchema = (label: string) =>
+export const nameSchema = (label: string) =>
   z
     .string()
     .trim()
@@ -54,6 +54,8 @@ export const passwordSchema = z
   .regex(LOWERCASE, 'Password must include a lowercase letter.')
   .regex(DIGIT, 'Password must include a number.')
   .regex(SPECIAL_CHARACTER, 'Password must include a special character.')
+
+export const PASSWORD_HINT = `At least ${PASSWORD_MIN_LENGTH} characters, with an uppercase letter, a lowercase letter, a number, and a special character.`
 
 /**
  * What the server actually needs to create an account. The confirmation field
@@ -98,10 +100,28 @@ export const resetPasswordSchema = z
     path: ['confirmPassword'],
   })
 
+/** FR-7.2: the server needs the current password and the new one; confirmation is browser-only. */
+export const changePasswordBodySchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required.'),
+  newPassword: passwordSchema,
+})
+
+export const changePasswordSchema = changePasswordBodySchema
+  .extend({ confirmPassword: z.string() })
+  .refine((values) => values.newPassword === values.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  })
+  .refine((values) => values.newPassword !== values.currentPassword, {
+    message: 'Choose a password you have not used before.',
+    path: ['newPassword'],
+  })
+
 export type RegisterInput = z.input<typeof registerSchema>
 export type LoginInput = z.input<typeof loginSchema>
 export type ForgotPasswordInput = z.input<typeof forgotPasswordSchema>
 export type ResetPasswordInput = z.input<typeof resetPasswordSchema>
+export type ChangePasswordInput = z.input<typeof changePasswordSchema>
 
 export type RegisterValues = z.output<typeof registerSchema>
 export type LoginValues = z.output<typeof loginSchema>

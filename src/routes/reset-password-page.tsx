@@ -8,7 +8,7 @@ import { TextField } from '@/components/text-field'
 import { Button } from '@/components/ui/button'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { apiPost, ApiError } from '@/lib/api-client'
-import { PASSWORD_MIN_LENGTH, resetPasswordSchema } from '@/lib/validation/auth'
+import { PASSWORD_HINT, resetPasswordSchema } from '@/lib/validation/auth'
 import type { ResetPasswordInput } from '@/lib/validation/auth'
 
 type RecoveryTokens = { accessToken: string; refreshToken: string }
@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
           label="New password"
           type="password"
           autoComplete="new-password"
-          hint={`At least ${PASSWORD_MIN_LENGTH} characters, with an uppercase letter, a lowercase letter, a number, and a special character.`}
+          hint={PASSWORD_HINT}
           error={errors.password?.message}
           {...register('password')}
         />
