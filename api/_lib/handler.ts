@@ -1,3 +1,5 @@
+import type { ZodError } from 'zod'
+
 import { recordAuditEvent } from './audit.ts'
 import { HttpError, sendJson, type ApiHandler, type ApiRequest, type ApiResponse } from './http.ts'
 
@@ -20,6 +22,18 @@ export const GENERIC_ERROR = 'Something went wrong. Please try again.'
 export const INVALID_CREDENTIALS = 'Email address or password is incorrect.'
 
 export type ValidationErrors = Record<string, string>
+
+/** First message per field, keyed the way the forms expect. */
+export function toFieldErrors(error: ZodError): ValidationErrors {
+  const fieldErrors: ValidationErrors = {}
+  for (const issue of error.issues) {
+    const field = issue.path[0]
+    if (typeof field === 'string' && !(field in fieldErrors)) {
+      fieldErrors[field] = issue.message
+    }
+  }
+  return fieldErrors
+}
 
 export function sendValidationError(res: ApiResponse, fieldErrors: ValidationErrors): void {
   sendJson(res, 400, { error: 'Please correct the highlighted fields.', fieldErrors })
