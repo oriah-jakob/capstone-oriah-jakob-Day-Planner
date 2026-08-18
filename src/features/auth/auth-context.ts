@@ -12,6 +12,7 @@ export type AuthContextValue = {
   user: SessionUser | null
   login: (email: string, password: string) => Promise<Session>
   register: (values: RegisterArgs) => Promise<Session>
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>
   logout: () => Promise<void>
 }
 
