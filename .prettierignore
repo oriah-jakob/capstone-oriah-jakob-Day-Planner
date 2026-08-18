@@ -5,3 +5,4 @@ blob-report/
 test-results/
 package-lock.json
 supabase/.temp/
+src/types/database.ts

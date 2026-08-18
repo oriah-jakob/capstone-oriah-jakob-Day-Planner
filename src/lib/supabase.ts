@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 import { getAccessToken } from '@/lib/auth/session'
+import type { Database } from '@/types/database'
 
 /**
  * Browser Supabase client, used for data only.
@@ -12,7 +13,7 @@ import { getAccessToken } from '@/lib/auth/session'
  * (NFR-3); this client only carries the in-memory access token so that row
  * level security sees the right user.
  */
-export const supabase = createClient(
+export const supabase = createClient<Database>(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY,
   {
