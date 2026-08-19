@@ -6,6 +6,13 @@ import { expect, type Page } from '@playwright/test'
  * violation. Backs test case A-01 and NFR-10/NFR-11.
  */
 export async function expectNoAccessibilityViolations(page: Page) {
+  // Let running transitions finish so axe measures settled colours, not a mid-fade frame.
+  await page.evaluate(() =>
+    Promise.all(
+      document.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  )
+
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
