@@ -43,6 +43,18 @@ export function relativeLuminance({ r, g, b }: Rgb): number {
 }
 
 /** Contrast ratio between two hex colours, from 1:1 to 21:1. */
+function toHex({ r, g, b }: Rgb): string {
+  return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
+}
+
+/** Composite a translucent colour over an opaque backdrop, as the browser does for `bg-primary/90`. */
+export function blendHex(foreground: string, backdrop: string, alpha: number): string {
+  const top = parseHex(foreground)
+  const under = parseHex(backdrop)
+  const mix = (a: number, b: number) => Math.round(a * alpha + b * (1 - alpha))
+  return toHex({ r: mix(top.r, under.r), g: mix(top.g, under.g), b: mix(top.b, under.b) })
+}
+
 export function contrastRatio(foreground: string, background: string): number {
   const l1 = relativeLuminance(parseHex(foreground))
   const l2 = relativeLuminance(parseHex(background))

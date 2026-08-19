@@ -20,7 +20,7 @@
   --popover: #ffffff;
   --popover-foreground: #0f1b2d;
 
-  --primary: #1b6fc0;
+  --primary: #1663ad;
   --primary-foreground: #ffffff;
 
   --secondary: #e8eff7;
@@ -40,7 +40,7 @@
 
   --border: #d3dfec;
   --input: #b9c9db;
-  --ring: #1b6fc0;
+  --ring: #1663ad;
 }
 
 .dark {

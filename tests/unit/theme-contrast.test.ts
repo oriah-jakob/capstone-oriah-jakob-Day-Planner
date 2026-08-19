@@ -7,7 +7,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { AA_NORMAL_TEXT, contrastRatio } from '@/lib/contrast'
+import { AA_NORMAL_TEXT, blendHex, contrastRatio } from '@/lib/contrast'
 
 const css = readFileSync(fileURLToPath(new URL('../../src/index.css', import.meta.url)), 'utf8')
 
@@ -45,6 +45,9 @@ const TEXT_PAIRS: ReadonlyArray<readonly [string, string]> = [
   ['muted-foreground', 'card'],
 ]
 
+/** shadcn buttons hover at 90% opacity, so the blended colour has to pass too. */
+const HOVER_ALPHA = 0.9
+
 describe.each([
   ['light theme', ':root'],
   ['dark theme', '\\.dark'],
@@ -64,4 +67,17 @@ describe.each([
       `--${fg} (${foreground}) on --${bg} (${background}) is ${ratio.toFixed(2)}:1`,
     ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT)
   })
+
+  it.each(['background', 'card'])(
+    'primary-foreground on a hovered primary button over %s meets WCAG AA',
+    (backdrop) => {
+      const hovered = blendHex(tokens['primary']!, tokens[backdrop]!, HOVER_ALPHA)
+      const ratio = contrastRatio(tokens['primary-foreground']!, hovered)
+
+      expect(
+        ratio,
+        `--primary at ${HOVER_ALPHA} over --${backdrop} is ${ratio.toFixed(2)}:1`,
+      ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT)
+    },
+  )
 })

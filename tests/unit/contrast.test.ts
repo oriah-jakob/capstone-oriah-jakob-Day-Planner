@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { contrastRatio, parseHex, relativeLuminance } from '@/lib/contrast'
+import { blendHex, contrastRatio, parseHex, relativeLuminance } from '@/lib/contrast'
 
 describe('parseHex', () => {
   it('parses six-digit hex', () => {
@@ -24,6 +24,17 @@ describe('relativeLuminance', () => {
   it('returns 0 for black and 1 for white', () => {
     expect(relativeLuminance(parseHex('#000000'))).toBeCloseTo(0, 5)
     expect(relativeLuminance(parseHex('#ffffff'))).toBeCloseTo(1, 5)
+  })
+})
+
+describe('blendHex', () => {
+  it('mixes the colour with the backdrop by alpha', () => {
+    expect(blendHex('#000000', '#ffffff', 0.5)).toBe('#808080')
+  })
+
+  it('returns the colour itself when opaque and the backdrop when transparent', () => {
+    expect(blendHex('#1663ad', '#ffffff', 1)).toBe('#1663ad')
+    expect(blendHex('#1663ad', '#ffffff', 0)).toBe('#ffffff')
   })
 })
 
