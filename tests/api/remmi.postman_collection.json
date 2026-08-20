@@ -1,0 +1,369 @@
+{
+  "info": {
+    "name": "Remmi API tests",
+    "description": "API-01 (create account) and API-02 (update profile) from the project proposal. Run against the local Supabase stack with `npm run preview` serving the app. The same assertions run in CI from tests/api/api-profile.spec.ts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "password", "value": "Str0ng!Pass" },
+    { "key": "email", "value": "" },
+    { "key": "otherEmail", "value": "" },
+    { "key": "accessToken", "value": "" },
+    { "key": "otherAccessToken", "value": "" },
+    { "key": "userId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "API-01 Create account",
+      "item": [
+        {
+          "name": "Register a new account",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8)",
+                  "pm.collectionVariables.set('email', `api-${id}@example.com`)"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('account created (201)', () => pm.response.to.have.status(201))",
+                  "const body = pm.response.json()",
+                  "pm.test('session returned for the new user', () => {",
+                  "  pm.expect(body.accessToken).to.be.a('string')",
+                  "  pm.expect(body.user.email).to.eql(pm.collectionVariables.get('email'))",
+                  "})",
+                  "pm.test('refresh cookie is HttpOnly, Secure and SameSite (NFR-3)', () => {",
+                  "  const cookie = pm.response.headers.get('Set-Cookie') || ''",
+                  "  pm.expect(cookie).to.include('remmi_rt=')",
+                  "  pm.expect(cookie).to.include('HttpOnly')",
+                  "  pm.expect(cookie).to.include('Secure')",
+                  "  pm.expect(cookie).to.include('SameSite=Lax')",
+                  "})",
+                  "pm.collectionVariables.set('accessToken', body.accessToken)",
+                  "pm.collectionVariables.set('userId', body.user.id)"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Api\",\n  \"lastName\": \"Tester\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject a duplicate email address",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('duplicate email refused (409, FR-1.2)', () => pm.response.to.have.status(409))",
+                  "pm.test('error message names the conflict', () => pm.expect(pm.response.json().error).to.include('already exists'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Someone\",\n  \"lastName\": \"Else\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject a weak password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('weak password refused (400, FR-1.3)', () => pm.response.to.have.status(400))",
+                  "pm.test('password field error returned', () => pm.expect(pm.response.json().fieldErrors.password).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Api\",\n  \"lastName\": \"Tester\",\n  \"email\": \"{{email}}\",\n  \"password\": \"weak\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "API-02 Update profile",
+      "item": [
+        {
+          "name": "Update profile fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('profile updated (200)', () => pm.response.to.have.status(200))",
+                  "pm.test('updated row returned', () => {",
+                  "  const [row] = pm.response.json()",
+                  "  pm.expect(row).to.include({ first_name: 'Updated', last_name: 'Name', notification_timer_minutes: 30 })",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/profiles?id=eq.{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Updated\",\n  \"last_name\": \"Name\",\n  \"notification_timer_minutes\": 30\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Read the profile back",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('profile readable (200)', () => pm.response.to.have.status(200))",
+                  "pm.test('changes persisted in the database', () => {",
+                  "  pm.expect(pm.response.json()).to.eql([{ first_name: 'Updated', last_name: 'Name', notification_timer_minutes: 30 }])",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/profiles?id=eq.{{userId}}&select=first_name,last_name,notification_timer_minutes"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject a protected column",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('email change refused (400)', () => pm.response.to.have.status(400))",
+                  "pm.test('guard trigger explains why', () => pm.expect(pm.response.json().message).to.eql('profile column is not user editable'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/profiles?id=eq.{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"someone-else@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject an out-of-range timer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('timer above 1440 refused (400)', () => pm.response.to.have.status(400))",
+                  "pm.test('check constraint reported', () => pm.expect(pm.response.json().code).to.eql('23514'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/profiles?id=eq.{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notification_timer_minutes\": 5000\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject an unauthenticated update",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('no session, no update (401)', () => pm.response.to.have.status(401))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/profiles?id=eq.{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Anonymous\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register a second account",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8)",
+                  "pm.collectionVariables.set('otherEmail', `api-${id}@example.com`)"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('second account created (201)', () => pm.response.to.have.status(201))",
+                  "pm.collectionVariables.set('otherAccessToken', pm.response.json().accessToken)"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Other\",\n  \"lastName\": \"User\",\n  \"email\": \"{{otherEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cannot update another user's profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('request accepted but matches no row (200)', () => pm.response.to.have.status(200))",
+                  "pm.test('row level security hides the other profile', () => pm.expect(pm.response.json()).to.eql([]))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{otherAccessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/profiles?id=eq.{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Hijacked\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Owner's profile is unchanged",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('first name untouched by the other user', () => pm.expect(pm.response.json()).to.eql([{ first_name: 'Updated' }]))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/profiles?id=eq.{{userId}}&select=first_name"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
