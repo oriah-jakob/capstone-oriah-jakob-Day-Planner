@@ -1,6 +1,14 @@
 import { expect, test } from '@playwright/test'
 
 import { expectNoAccessibilityViolations } from './utils/a11y'
+import { registerUser } from './utils/auth'
+
+// Unknown routes render inside the app shell, which is behind the route guard.
+// An anonymous visitor is sent to the login page instead (covered in
+// fr1-auth.spec.ts).
+test.beforeEach(async ({ page }) => {
+  await registerUser(page)
+})
 
 test.describe('not found page', () => {
   test('renders for an unknown route and keeps navigation available', async ({ page }) => {

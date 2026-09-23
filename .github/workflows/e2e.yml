@@ -13,7 +13,7 @@ jobs:
   playwright:
     name: Playwright + axe
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,22 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # A real Postgres with the real migrations and real row level security.
+      # Auth cannot be meaningfully tested against a mock. The excluded services
+      # are not exercised by the suite and only slow the image pull down.
+      - name: Start Supabase
+        run: npx supabase start -x studio,imgproxy,logflare,vector
+
+      - name: Export Supabase credentials
+        run: |
+          eval "$(npx supabase status -o env)"
+          {
+            echo "VITE_SUPABASE_URL=$API_URL"
+            echo "VITE_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "VITE_APP_URL=http://localhost:4173"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
@@ -44,3 +60,7 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      - name: Stop Supabase
+        if: always()
+        run: npx supabase stop --no-backup

@@ -1,6 +1,9 @@
-import { NavLink } from 'react-router'
+import { LogOut } from 'lucide-react'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router'
 
 import { NAV_GROUPS } from '@/app/nav-items'
+import { useAuth } from '@/features/auth/use-auth'
 import { cn } from '@/lib/utils'
 
 export function AppSidebar() {
@@ -54,7 +57,44 @@ export function AppSidebar() {
             </ul>
           </div>
         ))}
+
+        <div className="min-w-max md:min-w-0 md:pt-2">
+          <SignOutButton />
+        </div>
       </div>
     </nav>
+  )
+}
+
+/** FR-3: log out. */
+function SignOutButton() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [signingOut, setSigningOut] = useState(false)
+
+  const onSignOut = async () => {
+    setSigningOut(true)
+    await logout()
+    // replace so the back button cannot return to a signed-in screen.
+    await navigate('/login', { replace: true })
+  }
+
+  return (
+    <>
+      {user && (
+        <p className="mb-1 hidden truncate text-xs text-muted-foreground md:block">
+          Signed in as {user.firstName} {user.lastName}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={() => void onSignOut()}
+        disabled={signingOut}
+        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+      >
+        <LogOut className="size-4" aria-hidden />
+        <span>{signingOut ? 'Signing out…' : 'Log Out'}</span>
+      </button>
+    </>
   )
 }
