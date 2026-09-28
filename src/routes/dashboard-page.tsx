@@ -1,17 +1,18 @@
 import { Plus } from 'lucide-react'
 import { useId } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 
 import { FormAlert } from '@/components/form-alert'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { useAuth } from '@/features/auth/use-auth'
+import { DayNavigation } from '@/features/tasks/components/day-navigation'
 import { DayTimeline } from '@/features/tasks/components/day-timeline'
 import { summarizeDay } from '@/features/tasks/timeline'
 import { useDayTasks } from '@/features/tasks/use-tasks'
 import { useDocumentTitle } from '@/hooks/use-document-title'
-import { formatDayHeading, partOfDay, todayIsoDate } from '@/lib/datetime'
+import { formatDayHeading, isIsoDate, partOfDay, todayIsoDate } from '@/lib/datetime'
 
 function describeDay(total: number, completed: number): string {
   if (total === 0) return 'No tasks scheduled.'
@@ -23,12 +24,20 @@ export default function DashboardPage() {
   useDocumentTitle('Dashboard')
 
   const { user } = useAuth()
-  const date = todayIsoDate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const today = todayIsoDate()
+  const requested = searchParams.get('date')
+  const date = requested && isIsoDate(requested) ? requested : today
   const dayHeading = formatDayHeading(date)
   const headingId = useId()
 
   const tasks = useDayTasks(date)
   const summary = summarizeDay(tasks.data ?? [])
+
+  const changeDate = (next: string) => {
+    setSearchParams(next === today ? {} : { date: next }, { replace: true })
+  }
 
   return (
     <>
@@ -48,7 +57,7 @@ export default function DashboardPage() {
       <Card>
         <CardHeader>
           <h2 className="leading-none font-semibold">Timeline</h2>
-          <CardDescription>
+          <CardDescription aria-live="polite">
             <span id={headingId} className="font-medium text-foreground">
               {dayHeading}
             </span>
@@ -56,7 +65,9 @@ export default function DashboardPage() {
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="grid gap-4">
+          <DayNavigation date={date} today={today} onChange={changeDate} />
+
           {tasks.isPending && (
             <output aria-live="polite" className="text-sm text-muted-foreground">
               Loading your timeline…
