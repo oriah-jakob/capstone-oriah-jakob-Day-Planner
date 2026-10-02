@@ -209,6 +209,11 @@ After each production deployment, GitHub Actions runs the same smoke test (`smok
 and an OWASP ZAP baseline scan (`zap.yml`, SEC-01). The ZAP report is attached to the run
 as an artifact. Both can also be started from the Actions tab against any URL.
 
+The automatic runs test the `PRODUCTION_URL` repository variable rather than the URL in the
+deployment event, because Vercel puts every per-deployment URL behind its login and only the
+production domain is public. They also need the Vercel project to report deployments to
+GitHub, which is the GitHub Deployments option under the project's Git settings.
+
 ### Smoke account
 
 Locally the sign-in check registers a throwaway account, so it runs in the E2E job on every
