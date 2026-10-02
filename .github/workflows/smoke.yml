@@ -18,11 +18,12 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.deployment_status.state == 'success' &&
-      github.event.deployment.environment == 'Production')
+      startsWith(github.event.deployment.environment, 'Production'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      PLAYWRIGHT_BASE_URL: ${{ inputs.target || github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+      # Per-deployment URLs sit behind Vercel's login; the production domain is public.
+      PLAYWRIGHT_BASE_URL: ${{ inputs.target || vars.PRODUCTION_URL }}
       SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
       SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
 
