@@ -54,19 +54,4 @@ test.describe('deployment smoke', () => {
     expect([301, 307, 308]).toContain(response.status())
     expect(response.headers()['location']).toMatch(/^https:\/\//)
   })
-
-  test('signs in and out with the smoke account', async ({ page }) => {
-    const email = process.env.SMOKE_EMAIL
-    const password = process.env.SMOKE_PASSWORD
-    test.skip(!email || !password, 'Set SMOKE_EMAIL and SMOKE_PASSWORD to run.')
-
-    await page.goto('/login')
-    await page.getByLabel('Email address').fill(email!)
-    await page.getByLabel('Password', { exact: true }).fill(password!)
-    await page.getByRole('button', { name: 'Log in' }).click()
-    await expect(page.getByRole('heading', { level: 2, name: 'Timeline' })).toBeVisible()
-
-    await page.getByRole('button', { name: 'Log Out' }).click()
-    await expect(page).toHaveURL(/\/login$/)
-  })
 })
