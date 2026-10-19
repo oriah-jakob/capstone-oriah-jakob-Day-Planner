@@ -19,6 +19,8 @@ export type AuditEvent =
   | 'password_reset_request'
   | 'password_reset_success'
   | 'password_reset_failure'
+  | 'password_change_success'
+  | 'password_change_failure'
   | 'unhandled_error'
 
 export type AuditSeverity = 'info' | 'warn' | 'error'

@@ -1,10 +1,17 @@
+import { existsSync } from 'node:fs'
+
 import { defineConfig, devices } from '@playwright/test'
+
+// Playwright does not read .env files; the API specs need the Supabase URL and key.
+if (existsSync('.env.local')) process.loadEnvFile('.env.local')
 
 const PORT = 4173
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`
 
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: './tests',
+  // Unit tests are *.test.ts and belong to Vitest.
+  testMatch: '**/*.spec.ts',
   fullyParallel: true,
 
   // A committed `test.only` should fail the pipeline, not silently skip the suite.

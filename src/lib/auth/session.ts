@@ -58,6 +58,12 @@ export function clearSession(): void {
   emit()
 }
 
+export function updateSessionUser(patch: Partial<SessionUser>): void {
+  if (current === null) return
+  current = { ...current, user: { ...current.user, ...patch } }
+  emit()
+}
+
 function isUsable(session: Session | null): session is Session {
   if (!session) return false
   return session.expiresAt - EXPIRY_MARGIN_SECONDS > Date.now() / 1000

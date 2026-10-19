@@ -1,6 +1,6 @@
 import { registerAccountSchema } from '../../src/lib/validation/auth.ts'
 import { recordAuditEvent } from '../_lib/audit.ts'
-import { defineHandler, sendValidationError, type ValidationErrors } from '../_lib/handler.ts'
+import { defineHandler, sendValidationError, toFieldErrors } from '../_lib/handler.ts'
 import { assertMethod, HttpError, readJsonBody, sendJson } from '../_lib/http.ts'
 import { buildSessionPayload } from '../_lib/profile.ts'
 import { setRefreshCookie } from '../_lib/session.ts'
@@ -12,14 +12,7 @@ export default defineHandler('auth/register', async (req, res) => {
 
   const parsed = registerAccountSchema.safeParse(await readJsonBody(req))
   if (!parsed.success) {
-    const fieldErrors: ValidationErrors = {}
-    for (const issue of parsed.error.issues) {
-      const field = issue.path[0]
-      if (typeof field === 'string' && !(field in fieldErrors)) {
-        fieldErrors[field] = issue.message
-      }
-    }
-    sendValidationError(res, fieldErrors)
+    sendValidationError(res, toFieldErrors(parsed.error))
     return
   }
 

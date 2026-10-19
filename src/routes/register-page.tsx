@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/use-auth'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { ApiError } from '@/lib/api-client'
-import { PASSWORD_MIN_LENGTH, registerSchema, type RegisterInput } from '@/lib/validation/auth'
+import { PASSWORD_HINT, registerSchema, type RegisterInput } from '@/lib/validation/auth'
 
 /** FR-1: register a Personal account. */
 export default function RegisterPage() {
@@ -93,7 +93,7 @@ export default function RegisterPage() {
           label="Password"
           type="password"
           autoComplete="new-password"
-          hint={`At least ${PASSWORD_MIN_LENGTH} characters, with an uppercase letter, a lowercase letter, a number, and a special character.`}
+          hint={PASSWORD_HINT}
           error={errors.password?.message}
           {...register('password')}
         />
