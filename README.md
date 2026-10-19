@@ -202,13 +202,34 @@ PLAYWRIGHT_BASE_URL=https://<app>.vercel.app npm run test:smoke
 ```
 
 The smoke specs are read-only: app shell, deep links, the auth functions, the security
-headers and the HTTPS redirect. Set `SMOKE_EMAIL` and `SMOKE_PASSWORD` to an account in
-that project to include a sign-in.
+headers and the HTTPS redirect. The sign-in check also needs `SMOKE_EMAIL` and
+`SMOKE_PASSWORD`; see the smoke account below.
 
 After each production deployment, GitHub Actions runs the same smoke test (`smoke.yml`)
 and an OWASP ZAP baseline scan (`zap.yml`, SEC-01). The ZAP report is attached to the run
-as an artifact. Both can also be started from the Actions tab against any URL. Add
-`SMOKE_EMAIL` and `SMOKE_PASSWORD` as repository secrets to enable the sign-in check there.
+as an artifact. Both can also be started from the Actions tab against any URL.
+
+### Smoke account
+
+Locally the sign-in check registers a throwaway account, so it runs in the E2E job on every
+pull request without secrets. A deployment needs a real account:
+
+1. Register an account on the deployed site that is used for nothing else, with a long
+   random password.
+2. Save it as repository secrets. `gh secret set` prompts for each value, so neither ends
+   up in shell history:
+
+   ```bash
+   gh secret set SMOKE_EMAIL
+   gh secret set SMOKE_PASSWORD
+   ```
+
+The repository is public, so the uploaded report must never contain the password.
+Playwright puts typed values in its step titles and request bodies in its traces, which is
+why the check signs in through `/api/auth/login` and `tests/smoke/sign-in.spec.ts` turns
+traces off. GitHub masks secrets in logs and never passes them to workflows from forks. If
+the password still leaks, the account holds no data and row level security keeps it out of
+everyone else's; register a new one and replace both secrets.
 
 Free Supabase projects pause after a week without traffic, so open the dashboard before
 a demo.
