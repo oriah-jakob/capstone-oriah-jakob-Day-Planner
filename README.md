@@ -48,7 +48,7 @@ the schema by clicking around a dashboard.
 | --------------------------- | ------------------------------------------------------------------- |
 | `VITE_SUPABASE_URL`         | Supabase API URL                                                    |
 | `VITE_SUPABASE_ANON_KEY`    | Publishable key; only grants what row level security allows         |
-| `VITE_APP_URL`              | Base URL used to build password reset links                         |
+| `VITE_APP_URL`              | Base URL for password reset links; not needed on Vercel             |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server side only. Writes the audit log; bypasses row level security |
 
 Anything prefixed `VITE_` is compiled into the browser bundle, so the service role key
@@ -56,28 +56,30 @@ deliberately has no prefix and is read only by the `api/` handlers.
 
 ## Scripts
 
-| Command                 | Does                                                             |
-| ----------------------- | ---------------------------------------------------------------- |
-| `npm run dev`           | Dev server on port 5173                                          |
-| `npm run build`         | Typecheck and build to `dist/`                                   |
-| `npm run preview`       | Serve the production build on port 4173                          |
-| `npm run lint`          | ESLint (includes `jsx-a11y` accessibility rules)                 |
-| `npm run format`        | Prettier write                                                   |
-| `npm run typecheck`     | `tsc -b` across app, node, and e2e projects                      |
-| `npm test`              | Vitest once                                                      |
-| `npm run test:watch`    | Vitest in watch mode                                             |
-| `npm run test:coverage` | Vitest with coverage                                             |
-| `npm run test:e2e`      | Playwright end-to-end and API specs against the production build |
-| `npm run test:e2e:ui`   | Playwright interactive runner                                    |
-| `npm run test:api`      | Playwright API specs only                                        |
-| `npm run db:start`      | Start the local Supabase stack                                   |
-| `npm run db:reset`      | Reapply all migrations from scratch                              |
-| `npm run db:types`      | Regenerate `src/types/database.ts` from the schema               |
+| Command                 | Does                                                              |
+| ----------------------- | ----------------------------------------------------------------- |
+| `npm run dev`           | Dev server on port 5173                                           |
+| `npm run build`         | Typecheck and build to `dist/`                                    |
+| `npm run preview`       | Serve the production build on port 4173                           |
+| `npm run lint`          | ESLint (includes `jsx-a11y` accessibility rules)                  |
+| `npm run format`        | Prettier write                                                    |
+| `npm run typecheck`     | `tsc -b` across app, node, and e2e projects                       |
+| `npm test`              | Vitest once                                                       |
+| `npm run test:watch`    | Vitest in watch mode                                              |
+| `npm run test:coverage` | Vitest with coverage                                              |
+| `npm run test:e2e`      | Playwright end-to-end and API specs against the production build  |
+| `npm run test:e2e:ui`   | Playwright interactive runner                                     |
+| `npm run test:api`      | Playwright API specs only                                         |
+| `npm run test:smoke`    | Read-only smoke specs; set `PLAYWRIGHT_BASE_URL` for a deployment |
+| `npm run db:start`      | Start the local Supabase stack                                    |
+| `npm run db:reset`      | Reapply all migrations from scratch                               |
+| `npm run db:push`       | Apply the migrations to the linked hosted project                 |
+| `npm run db:types`      | Regenerate `src/types/database.ts` from the schema                |
 
 ## Layout
 
 ```
-.github/workflows/   CI (lint, typecheck, unit) and E2E (Playwright, axe)
+.github/workflows/   CI, E2E (Playwright, axe), and deployment smoke and ZAP scans
 api/                 Vercel serverless functions
   _lib/              shared request, cookie, Supabase, and audit helpers
   auth/              register, login, refresh, logout, password reset, change password
@@ -98,6 +100,7 @@ tests/
   unit/              Vitest
   e2e/               Playwright, one spec per functional requirement
   api/               Playwright request specs (API-01 to API-03) and the Postman collection
+  smoke/             read-only checks that run against a deployed URL
 ```
 
 ### How authentication is wired
@@ -149,17 +152,66 @@ The design tokens in `src/index.css` are contrast-checked by
 breaks the build rather than slipping through to an audit later. The check also covers the
 90% hover state of primary buttons.
 
-## Hosted project configuration
+## Deployment
 
-Local Supabase settings live in `supabase/config.toml` and are applied automatically. The
-hosted project must be configured to match by hand — in particular the password policy
-under **Authentication → Sign In / Providers → Email**:
+The app runs on Vercel and talks to a hosted Supabase project. Both fit the free tiers.
 
-- Minimum length **8**
-- Required characters: **lowercase, uppercase, digits, symbols**
+### 1. Supabase project
 
-This is the server-side enforcement of the password rule. Client-side validation exists
-only to produce a friendlier error message and must never be the only check.
+1. Create a project at supabase.com. The migrations are the only way the schema changes:
+
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <project-ref>
+   npm run db:push
+   ```
+
+2. Match the local `supabase/config.toml` in the dashboard:
+   - **Authentication → Sign In / Providers → Email:** turn **Confirm email** off, since
+     registration signs the user straight in. Set the minimum password length to **8**
+     and require **lowercase, uppercase, digits, symbols**. This is the server-side
+     enforcement of FR-1.3; the client-side check only gives a friendlier message.
+   - **Authentication → URL Configuration:** set the Site URL to the production URL and
+     add `https://<app>.vercel.app/reset-password` to the redirect URLs. Add
+     `https://*-<team>.vercel.app/reset-password` as well so reset links work on previews.
+3. Copy the project URL, the publishable key and the secret key from **Project Settings →
+   API Keys**.
+
+The built-in email sender only delivers to members of the Supabase organisation and is
+rate limited. That is enough for a demo; real users need custom SMTP.
+
+### 2. Vercel project
+
+1. Import the GitHub repository. `vercel.json` sets the framework, the single page app
+   rewrite and the security headers, and `package.json` pins Node 24.
+2. Add the environment variables to Production and Preview:
+
+   | Variable                    | Value                                                    |
+   | --------------------------- | -------------------------------------------------------- |
+   | `VITE_SUPABASE_URL`         | project URL                                              |
+   | `VITE_SUPABASE_ANON_KEY`    | publishable key                                          |
+   | `SUPABASE_SERVICE_ROLE_KEY` | secret key, marked Sensitive                             |
+   | `APP_URL`                   | only for a custom domain; otherwise Vercel's URL is used |
+
+3. Deploy. Merging to `main` deploys production and every pull request gets a preview.
+
+### 3. Verify
+
+```bash
+PLAYWRIGHT_BASE_URL=https://<app>.vercel.app npm run test:smoke
+```
+
+The smoke specs are read-only: app shell, deep links, the auth functions, the security
+headers and the HTTPS redirect. Set `SMOKE_EMAIL` and `SMOKE_PASSWORD` to an account in
+that project to include a sign-in.
+
+After each production deployment, GitHub Actions runs the same smoke test (`smoke.yml`)
+and an OWASP ZAP baseline scan (`zap.yml`, SEC-01). The ZAP report is attached to the run
+as an artifact. Both can also be started from the Actions tab against any URL. Add
+`SMOKE_EMAIL` and `SMOKE_PASSWORD` as repository secrets to enable the sign-in check there.
+
+Free Supabase projects pause after a week without traffic, so open the dashboard before
+a demo.
 
 ## Conventions
 

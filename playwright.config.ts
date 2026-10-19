@@ -38,10 +38,13 @@ export default defineConfig({
 
   // Tests run against the production build, not the dev server, so what CI
   // exercises matches what Vercel serves.
-  webServer: {
-    command: `npm run preview -- --port ${PORT}`,
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // A deployed target is already running; only start the preview server for local runs.
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: `npm run preview -- --port ${PORT}`,
+        url: BASE_URL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
 })

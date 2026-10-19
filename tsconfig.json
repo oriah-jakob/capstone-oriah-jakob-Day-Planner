@@ -11,6 +11,9 @@
    * build itself uses tsconfig.app.json.
    */
   "compilerOptions": {
+    // Vercel compiles api/ with this file; emitted imports must point at .js, not .ts.
+    "rewriteRelativeImportExtensions": true,
+    "types": ["node"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

@@ -1,0 +1,35 @@
+name: ZAP baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deployed URL to scan
+        required: true
+        type: string
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: OWASP ZAP baseline (SEC-01)
+    # Preview deployments sit behind Vercel's login wall, so only production is scanned automatically.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: ${{ inputs.target || github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+          allow_issue_writing: false
+          fail_action: false
+          artifact_name: zap-baseline-report
