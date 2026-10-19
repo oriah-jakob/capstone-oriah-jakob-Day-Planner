@@ -1,47 +1,15 @@
 import { randomUUID } from 'node:crypto'
 
-import { expect, test, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+
+import { headers, PASSWORD, registerAccount, rest } from './utils'
 
 /**
  * API-01 and API-02 from the proposal's API test plan, asserted at the HTTP layer:
  * the /api/auth endpoints for accounts and Supabase PostgREST for the profile row.
  */
 
-const SUPABASE_URL = requireEnv('VITE_SUPABASE_URL')
-const ANON_KEY = requireEnv('VITE_SUPABASE_ANON_KEY')
-const PASSWORD = 'Str0ng!Pass'
-
-function requireEnv(name: string): string {
-  const value = process.env[name]
-  if (!value) throw new Error(`${name} is not set; copy .env.example to .env.local`)
-  return value
-}
-
-type Session = {
-  accessToken: string
-  user: { id: string; email: string; firstName: string; lastName: string }
-}
-
-async function registerAccount(request: APIRequestContext) {
-  const email = `api-${randomUUID()}@example.com`
-  const response = await request.post('/api/auth/register', {
-    data: { firstName: 'Api', lastName: 'Tester', email, password: PASSWORD },
-  })
-  expect(response.status()).toBe(201)
-  return { email, session: (await response.json()) as Session }
-}
-
-function profiles(query: string) {
-  return `${SUPABASE_URL}/rest/v1/profiles?${query}`
-}
-
-function headers(accessToken?: string) {
-  return {
-    apikey: ANON_KEY,
-    Prefer: 'return=representation',
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-  }
-}
+const profiles = (query: string) => rest('profiles', query)
 
 test.describe('API-01 create account', () => {
   test('creates the account and returns a session for it', async ({ request }) => {

@@ -20,9 +20,7 @@ export default function FamilyPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Family accounts and permissions arrive in week 9.
-          </p>
+          <p className="text-sm text-muted-foreground">Family accounts under construction.</p>
         </CardContent>
       </Card>
     </>

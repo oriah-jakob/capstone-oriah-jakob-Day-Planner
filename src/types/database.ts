@@ -97,6 +97,87 @@ export type Database = {
         }
         Relationships: []
       }
+      task_types: {
+        Row: {
+          id: number
+          type_name: string
+        }
+        Insert: {
+          id?: never
+          type_name: string
+        }
+        Update: {
+          id?: never
+          type_name?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          completion_status: string
+          created_at: string
+          end_time: string
+          hidden_from_family: boolean
+          id: string
+          note: string | null
+          notification_override_minutes: number | null
+          owner_user_id: string
+          priority: string
+          start_time: string
+          task_date: string
+          task_type_id: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completion_status?: string
+          created_at?: string
+          end_time: string
+          hidden_from_family?: boolean
+          id?: string
+          note?: string | null
+          notification_override_minutes?: number | null
+          owner_user_id?: string
+          priority?: string
+          start_time: string
+          task_date: string
+          task_type_id: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completion_status?: string
+          created_at?: string
+          end_time?: string
+          hidden_from_family?: boolean
+          id?: string
+          note?: string | null
+          notification_override_minutes?: number | null
+          owner_user_id?: string
+          priority?: string
+          start_time?: string
+          task_date?: string
+          task_type_id?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_task_type_id_fkey"
+            columns: ["task_type_id"]
+            isOneToOne: false
+            referencedRelation: "task_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,5 +1,9 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Plus } from 'lucide-react'
+import { Link } from 'react-router'
+
 import { PageHeader } from '@/components/page-header'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 
 export default function TasksPage() {
@@ -7,7 +11,18 @@ export default function TasksPage() {
 
   return (
     <>
-      <PageHeader title="My Tasks" description="Search, sort, and filter all scheduled tasks." />
+      <PageHeader
+        title="My Tasks"
+        description="Search, sort, and filter all scheduled tasks."
+        actions={
+          <Button asChild>
+            <Link to="/tasks/new">
+              <Plus aria-hidden />
+              Add Task
+            </Link>
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -16,7 +31,7 @@ export default function TasksPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Task creation arrives in week 5; search, filter, and sort in week 8.
+            Search, sort, and filter under construction.
           </p>
         </CardContent>
       </Card>

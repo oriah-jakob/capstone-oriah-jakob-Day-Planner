@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Remmi API tests",
-    "description": "API-01 (create account) and API-02 (update profile) from the project proposal. Run against the local Supabase stack with `npm run preview` serving the app. The same assertions run in CI from tests/api/api-profile.spec.ts.",
+    "description": "API-01 (create account), API-02 (update profile) and API-03 (create task) from the project proposal. Run against the local Supabase stack with `npm run preview` serving the app. The same assertions run in CI from the Playwright specs in tests/api/.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -360,6 +360,160 @@
               { "key": "Authorization", "value": "Bearer {{accessToken}}" }
             ],
             "url": "{{supabaseUrl}}/rest/v1/profiles?id=eq.{{userId}}&select=first_name"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "API-03 Create task",
+      "item": [
+        {
+          "name": "Create a task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('task stored (201)', () => pm.response.to.have.status(201))",
+                  "const [row] = pm.response.json()",
+                  "pm.test('owned by the caller with the default status', () => {",
+                  "  pm.expect(row.owner_user_id).to.eql(pm.collectionVariables.get('userId'))",
+                  "  pm.expect(row.completion_status).to.eql('not_completed')",
+                  "  pm.expect(row.start_time).to.eql('07:00:00')",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/tasks",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_type_id\": 1,\n  \"title\": \"Gym\",\n  \"task_date\": \"2026-09-16\",\n  \"start_time\": \"07:00\",\n  \"end_time\": \"08:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Read the task back",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('task readable (200)', () => pm.response.to.have.status(200))",
+                  "pm.test('stored values returned', () => pm.expect(pm.response.json()).to.eql([{ title: 'Gym', start_time: '07:00:00', end_time: '08:00:00' }]))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/tasks?select=title,start_time,end_time&task_date=eq.2026-09-16"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject an end time before the start time",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('invalid times refused (400, F4-03)', () => pm.response.to.have.status(400))",
+                  "pm.test('end-after-start check reported', () => pm.expect(pm.response.json().message).to.include('tasks_end_after_start'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/tasks",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_type_id\": 1,\n  \"title\": \"Gym\",\n  \"task_date\": \"2026-09-16\",\n  \"start_time\": \"09:00\",\n  \"end_time\": \"08:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cannot create a task on another user's timeline",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('row level security refuses it (403, FR-19.2)', () => pm.response.to.have.status(403))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{otherAccessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/tasks",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_type_id\": 1,\n  \"title\": \"Gym\",\n  \"task_date\": \"2026-09-16\",\n  \"start_time\": \"07:00\",\n  \"end_time\": \"08:00\",\n  \"owner_user_id\": \"{{userId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Another user cannot read the task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('request accepted but matches no row (200)', () => pm.response.to.have.status(200))",
+                  "pm.test('row level security hides the task', () => pm.expect(pm.response.json()).to.eql([]))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{otherAccessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/tasks?select=id&owner_user_id=eq.{{userId}}"
           },
           "response": []
         }

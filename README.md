@@ -87,6 +87,7 @@ src/
   components/        layout, shared components, ui/ (shadcn primitives)
   features/auth/     auth context, provider, route guards, change password form
   features/profile/  profile query and update hooks, profile and settings forms
+  features/tasks/    task queries, create form, day timeline and navigation
   hooks/             shared React hooks
   lib/               framework-agnostic helpers, validation schemas
   routes/            one file per page
@@ -96,7 +97,7 @@ supabase/
 tests/
   unit/              Vitest
   e2e/               Playwright, one spec per functional requirement
-  api/               Playwright request specs (API-01, API-02) and the Postman collection
+  api/               Playwright request specs (API-01 to API-03) and the Postman collection
 ```
 
 ### How authentication is wired
@@ -114,6 +115,17 @@ Changing a password from Settings posts to `api/auth/change-password`, which con
 current password and then updates it on the session that made the request. That session
 stays signed in while Supabase revokes every other one.
 
+### How the timeline reads tasks
+
+Tasks are read and written straight from the browser through PostgREST; row level
+security limits every statement to the caller's own rows, and the table's `CHECK`
+constraints repeat the form's rules (end after start, title length, known status) so a
+direct API call cannot store what the form would refuse. The dashboard keeps the day in
+a `?date=YYYY-MM-DD` parameter, so a refresh or a shared link opens the same day. Dates
+and times are wall-clock values with no timezone conversion, matching the ERD.
+
+### Serving the API locally
+
 Because Vite does not run Vercel functions, `plugins/api-routes.ts` mounts the same
 handlers during `npm run dev` and `npm run preview`. The handlers are imported
 directly and Node strips the types, so every import inside `api/` is relative and
@@ -126,7 +138,7 @@ Every end-to-end spec is named after the test case IDs in the project proposal s
 map straight onto the test plan. Accessibility checks run inside the Playwright suite via
 axe-core, covering WCAG 2.1 A/AA.
 
-The API test cases (API-01, API-02) live in `tests/api/` and run in the same Playwright
+The API test cases (API-01 to API-03) live in `tests/api/` and run in the same Playwright
 command, using its request API against the `/api` endpoints and Supabase PostgREST. The
 same requests are kept as a Postman collection, `tests/api/remmi.postman_collection.json`,
 with `tests/api/local.postman_environment.json` for the local stack; import both into

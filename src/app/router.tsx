@@ -5,6 +5,7 @@ import { AuthLayout } from '@/components/layout/auth-layout'
 import { RouteErrorBoundary } from '@/components/route-error-boundary'
 import { RedirectIfAuthenticated } from '@/features/auth/redirect-if-authenticated'
 import { RequireAuth } from '@/features/auth/require-auth'
+import CreateTaskPage from '@/routes/create-task-page'
 import DashboardPage from '@/routes/dashboard-page'
 import FamilyPage from '@/routes/family-page'
 import ForgotPasswordPage from '@/routes/forgot-password-page'
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
             children: [
               { index: true, Component: DashboardPage },
               { path: 'tasks', Component: TasksPage },
+              { path: 'tasks/new', Component: CreateTaskPage },
               { path: 'profile', Component: ProfilePage },
               { path: 'family', Component: FamilyPage },
               { path: 'settings', Component: SettingsPage },

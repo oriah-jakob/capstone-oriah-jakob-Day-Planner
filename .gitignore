@@ -55,5 +55,5 @@ pnpm-debug.log*
 *.tsbuildinfo
 .cache/
 
-# Working documents (not part of the submitted source)
+# Testing docs (not part of the submitted source)
 /docs/

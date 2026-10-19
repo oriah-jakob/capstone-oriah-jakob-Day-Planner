@@ -65,7 +65,7 @@ test.describe('F1-02 login success', () => {
     await signOut(page)
 
     await signIn(page, user)
-    await expect(page.getByText("Today's timeline")).toBeVisible()
+    await expect(page.getByRole('heading', { level: 2, name: 'Timeline' })).toBeVisible()
   })
 })
 
