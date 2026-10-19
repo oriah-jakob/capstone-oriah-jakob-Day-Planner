@@ -59,8 +59,9 @@ test.describe('F4-01 create a minimal task', () => {
   test('opens on the day being viewed', async ({ page }) => {
     await page.goto(`/?date=${DAY}`)
     await page.getByRole('link', { name: 'Add Task' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Create a new task' })).toBeVisible()
 
-    await expect(page.getByLabel('Date')).toHaveValue(DAY)
+    await expect(page.getByLabel('Date', { exact: true })).toHaveValue(DAY)
   })
 })
 

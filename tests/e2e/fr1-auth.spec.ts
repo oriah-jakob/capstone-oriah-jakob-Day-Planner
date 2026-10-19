@@ -104,6 +104,8 @@ test.describe('F1-05 forgot password request', () => {
   test('accepts the request and confirms without revealing the account', async ({ page }) => {
     await page.goto('/login')
     await page.getByRole('link', { name: 'Forgot password?' }).click()
+    // The login form stays mounted during the route transition and has a field with the same label.
+    await expect(page.getByRole('heading', { level: 1, name: 'Reset your password' })).toBeVisible()
 
     await page.getByLabel('Email address').fill('someone@example.com')
     await page.getByRole('button', { name: 'Send reset link' }).click()
