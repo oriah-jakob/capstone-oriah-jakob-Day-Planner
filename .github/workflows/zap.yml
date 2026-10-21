@@ -19,7 +19,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.deployment_status.state == 'success' &&
-      github.event.deployment.environment == 'Production')
+      startsWith(github.event.deployment.environment, 'Production'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -29,7 +29,8 @@ jobs:
       - name: Scan
         uses: zaproxy/action-baseline@v0.15.0
         with:
-          target: ${{ inputs.target || github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+          # Per-deployment URLs sit behind Vercel's login; the production domain is public.
+          target: ${{ inputs.target || vars.PRODUCTION_URL }}
           allow_issue_writing: false
           fail_action: false
           artifact_name: zap-baseline-report
