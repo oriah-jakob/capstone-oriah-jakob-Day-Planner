@@ -1,15 +1,17 @@
 import { Badge } from '@/components/ui/badge'
 import type { Task } from '@/features/tasks/api'
+import { TaskActions } from '@/features/tasks/components/task-actions'
 import { formatTime } from '@/lib/datetime'
 import { cn } from '@/lib/utils'
 
 type DayTimelineProps = {
   tasks: Task[]
   labelledBy: string
+  editable?: boolean
 }
 
 /** FR-12: one day's tasks, already sorted by start time. */
-export function DayTimeline({ tasks, labelledBy }: DayTimelineProps) {
+export function DayTimeline({ tasks, labelledBy, editable = false }: DayTimelineProps) {
   return (
     <ol aria-labelledby={labelledBy} className="grid gap-3">
       {tasks.map((task) => {
@@ -39,14 +41,17 @@ export function DayTimeline({ tasks, labelledBy }: DayTimelineProps) {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{task.task_types.type_name}</Badge>
-              <Badge
-                variant="secondary"
-                className={cn(completed && 'bg-success text-success-foreground')}
-              >
-                {completed ? 'Completed' : 'Not completed'}
-              </Badge>
+            <div className="grid justify-items-start gap-2 sm:justify-items-end">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{task.task_types.type_name}</Badge>
+                <Badge
+                  variant="secondary"
+                  className={cn(completed && 'bg-success text-success-foreground')}
+                >
+                  {completed ? 'Completed' : 'Not completed'}
+                </Badge>
+              </div>
+              {editable && <TaskActions task={task} />}
             </div>
           </li>
         )
