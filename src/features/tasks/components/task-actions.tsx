@@ -1,4 +1,5 @@
 import { useId, useState, type MouseEvent } from 'react'
+import { Link } from 'react-router'
 
 import { FormAlert } from '@/components/form-alert'
 import {
@@ -113,6 +114,11 @@ export function TaskActions({ task }: { task: Task }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <CompletionToggle task={task} />
+      <Button variant="ghost" size="sm" asChild>
+        <Link to={`/tasks/${task.id}/edit`} aria-label={`Edit ${task.title}`}>
+          Edit
+        </Link>
+      </Button>
       <DeleteTaskButton task={task} />
     </div>
   )
