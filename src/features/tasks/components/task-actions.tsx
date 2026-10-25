@@ -1,7 +1,21 @@
-import { useId, useState } from 'react'
+import { useId, useState, type MouseEvent } from 'react'
 
+import { FormAlert } from '@/components/form-alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { Button, buttonVariants } from '@/components/ui/button'
 import type { Task } from '@/features/tasks/api'
-import { useSetTaskStatus } from '@/features/tasks/use-tasks'
+import { useDeleteTask, useSetTaskStatus } from '@/features/tasks/use-tasks'
+import { formatDayHeading } from '@/lib/datetime'
 
 /** FR-15: the box reflects the change at once and snaps back if the save fails. */
 function CompletionToggle({ task }: { task: Task }) {
@@ -41,10 +55,65 @@ function CompletionToggle({ task }: { task: Task }) {
   )
 }
 
+/** FR-14: nothing is removed until the user confirms, and the dialog stays open if the delete fails. */
+function DeleteTaskButton({ task }: { task: Task }) {
+  const deleteTask = useDeleteTask()
+  const [open, setOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const onConfirm = async (event: MouseEvent) => {
+    event.preventDefault()
+    setError(null)
+    try {
+      await deleteTask.mutateAsync(task.id)
+      setOpen(false)
+    } catch {
+      setError('We could not delete that task. Please try again.')
+    }
+  }
+
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        setError(null)
+      }}
+    >
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" size="sm" aria-label={`Delete ${task.title}`}>
+          Delete
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+          <AlertDialogDescription>
+            &ldquo;{task.title}&rdquo; will be removed from {formatDayHeading(task.task_date)}. This
+            cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {error && <FormAlert>{error}</FormAlert>}
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className={buttonVariants({ variant: 'destructive' })}
+            disabled={deleteTask.isPending}
+            onClick={(event) => void onConfirm(event)}
+          >
+            {deleteTask.isPending ? 'Deleting' : 'Delete task'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
 export function TaskActions({ task }: { task: Task }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <CompletionToggle task={task} />
+      <DeleteTaskButton task={task} />
     </div>
   )
 }
