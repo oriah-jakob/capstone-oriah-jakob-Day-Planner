@@ -10,7 +10,7 @@ export function AppSidebar() {
   return (
     <nav
       aria-label="Main"
-      className="shrink-0 border-b border-border bg-card md:h-dvh md:w-60 md:border-e md:border-b-0"
+      className="shrink-0 border-b border-border bg-card md:sticky md:top-0 md:h-dvh md:w-60 md:self-start md:overflow-y-auto md:border-e md:border-b-0"
     >
       <div className="flex items-center gap-2 px-4 py-4">
         <span
