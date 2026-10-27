@@ -127,6 +127,12 @@ direct API call cannot store what the form would refuse. The dashboard keeps the
 a `?date=YYYY-MM-DD` parameter, so a refresh or a shared link opens the same day. Dates
 and times are wall-clock values with no timezone conversion, matching the ERD.
 
+Each task on the timeline can be marked done, edited at `/tasks/:id/edit`, or deleted after a
+confirmation. The done box updates the cached timeline straight away and puts the old value
+back if the save fails, so the screen never shows a status the database does not have
+(NFR-12). Row level security turns a delete the caller is not allowed to make into "0 rows"
+rather than an error, so the client treats an empty result as a failed delete.
+
 ### Serving the API locally
 
 Because Vite does not run Vercel functions, `plugins/api-routes.ts` mounts the same
