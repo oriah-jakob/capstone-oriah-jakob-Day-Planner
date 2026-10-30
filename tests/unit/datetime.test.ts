@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   addDays,
   formatDayHeading,
+  formatShortDate,
   formatTime,
   isIsoDate,
   partOfDay,
@@ -79,6 +80,16 @@ describe('formatDayHeading', () => {
 
   it('adds the year for another year', () => {
     expect(formatDayHeading('2027-01-01', '2026-12-31')).toBe('Friday, January 1, 2027')
+  })
+})
+
+describe('formatShortDate', () => {
+  it('gives a short weekday and date within the current year', () => {
+    expect(formatShortDate('2026-09-16', '2026-09-20')).toBe('Wed, Sep 16')
+  })
+
+  it('adds the year for another year', () => {
+    expect(formatShortDate('2027-01-01', '2026-12-31')).toBe('Fri, Jan 1, 2027')
   })
 })
 
