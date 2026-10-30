@@ -38,7 +38,7 @@ export function parseFilters(params: URLSearchParams): TaskFilters {
 
 export function toSearchParams(filters: TaskFilters): Record<string, string> {
   const params: Record<string, string> = {}
-  if (filters.query) params.q = filters.query
+  if (filters.query.trim() !== '') params.q = filters.query
   if (filters.date) params.date = filters.date
   if (filters.status) params.status = filters.status
   if (filters.typeId) params.type = String(filters.typeId)
