@@ -42,6 +42,17 @@ export function formatDayHeading(iso: string, today: string = todayIsoDate()): s
   }).format(parseIsoDate(iso))
 }
 
+/** "Wed, Sep 16" for list rows; the year appears only when it is not the current one. */
+export function formatShortDate(iso: string, today: string = todayIsoDate()): string {
+  const sameYear = iso.slice(0, 4) === today.slice(0, 4)
+  return new Intl.DateTimeFormat('en-CA', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  }).format(parseIsoDate(iso))
+}
+
 /** "17:30:00" or "17:30" to "5:30 PM". */
 export function formatTime(time: string): string {
   const match = TIME.exec(time)
