@@ -61,6 +61,74 @@ export type Database = {
         }
         Relationships: []
       }
+      families: {
+        Row: {
+          created_at: string
+          family_name: string
+          id: string
+          owner_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          family_name: string
+          id?: string
+          owner_user_id: string
+        }
+        Update: {
+          created_at?: string
+          family_name?: string
+          id?: string
+          owner_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "families_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_members: {
+        Row: {
+          family_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          family_id: string
+          id?: string
+          joined_at?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          family_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_members_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: string
@@ -183,7 +251,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_family_member: { Args: { p_email: string }; Returns: undefined }
+      create_family: { Args: { p_family_name: string }; Returns: string }
+      current_family_id: { Args: never; Returns: string }
+      remove_family_member: { Args: { p_user_id: string }; Returns: undefined }
+      shares_family_with: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
