@@ -2,6 +2,7 @@ import { FormAlert } from '@/components/form-alert'
 import { PageHeader } from '@/components/page-header'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { useAuth } from '@/features/auth/use-auth'
+import { AddMemberForm } from '@/features/family/components/add-member-form'
 import { CreateFamilyForm } from '@/features/family/components/create-family-form'
 import { MemberList } from '@/features/family/components/member-list'
 import { useFamily } from '@/features/family/use-family'
@@ -58,7 +59,23 @@ export default function FamilyPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <MemberList members={family.data.family_members} currentUserId={user.id} />
+            <MemberList
+              members={family.data.family_members}
+              currentUserId={user.id}
+              isOwner={isOwner}
+            />
+
+            {isOwner && (
+              <section aria-labelledby="add-member-heading" className="mt-6 grid gap-2">
+                <h3 id="add-member-heading" className="font-medium">
+                  Add a family member
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  They need a Remmi account. Use the email address they signed up with.
+                </p>
+                <AddMemberForm />
+              </section>
+            )}
           </CardContent>
         </Card>
       )}

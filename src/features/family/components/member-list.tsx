@@ -1,14 +1,16 @@
 import { Badge } from '@/components/ui/badge'
 import type { FamilyMember } from '@/features/family/api'
+import { RemoveMemberButton } from '@/features/family/components/remove-member-button'
 import { orderMembers } from '@/features/family/members'
 import { initials } from '@/features/profile/format'
 
 type MemberListProps = {
   members: FamilyMember[]
   currentUserId: string
+  isOwner: boolean
 }
 
-export function MemberList({ members, currentUserId }: MemberListProps) {
+export function MemberList({ members, currentUserId, isOwner }: MemberListProps) {
   return (
     <ul aria-label="Family members" className="grid gap-3">
       {orderMembers(members).map((member) => {
@@ -36,6 +38,9 @@ export function MemberList({ members, currentUserId }: MemberListProps) {
               <p className="text-sm break-all text-muted-foreground">{email}</p>
             </div>
             <Badge variant={owner ? 'default' : 'secondary'}>{owner ? 'Owner' : 'Member'}</Badge>
+            {isOwner && !owner && (
+              <RemoveMemberButton userId={member.user_id} name={`${first} ${last}`} />
+            )}
           </li>
         )
       })}
