@@ -19,7 +19,8 @@ import type { CompletionStatus, TaskValues } from '@/lib/validation/task'
 export const taskKeys = {
   types: ['task-types'] as const,
   owner: (userId: string) => ['tasks', userId] as const,
-  day: (userId: string, date: string) => ['tasks', userId, 'day', date] as const,
+  day: (userId: string, date: string, ownerId: string) =>
+    ['tasks', userId, 'day', date, ownerId] as const,
   detail: (userId: string, id: string) => ['tasks', userId, 'detail', id] as const,
   search: (userId: string, filters: Omit<TaskFilters, 'sort'>) =>
     ['tasks', userId, 'search', filters] as const,
@@ -33,13 +34,15 @@ export function useTaskTypes() {
   return useQuery({ queryKey: taskKeys.types, queryFn: fetchTaskTypes, staleTime: Infinity })
 }
 
-export function useDayTasks(date: string) {
+/** The caller's own timeline unless `ownerId` names a family member's (FR-19). */
+export function useDayTasks(date: string, ownerId?: string, enabled = true) {
   const userId = useUserId()
+  const owner = ownerId ?? userId
 
   return useQuery({
-    queryKey: taskKeys.day(userId, date),
-    queryFn: async () => sortChronologically(await fetchDayTasks(userId, date)),
-    enabled: userId !== '',
+    queryKey: taskKeys.day(userId, date, owner),
+    queryFn: async () => sortChronologically(await fetchDayTasks(owner, date)),
+    enabled: enabled && userId !== '',
   })
 }
 

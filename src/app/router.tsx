@@ -11,6 +11,7 @@ import EditTaskPage from '@/routes/edit-task-page'
 import FamilyPage from '@/routes/family-page'
 import ForgotPasswordPage from '@/routes/forgot-password-page'
 import LoginPage from '@/routes/login-page'
+import MemberTimelinePage from '@/routes/member-timeline-page'
 import NotFoundPage from '@/routes/not-found-page'
 import ProfilePage from '@/routes/profile-page'
 import RegisterPage from '@/routes/register-page'
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
               { path: 'tasks/:taskId/edit', Component: EditTaskPage },
               { path: 'profile', Component: ProfilePage },
               { path: 'family', Component: FamilyPage },
+              { path: 'family/:memberId', Component: MemberTimelinePage },
               { path: 'settings', Component: SettingsPage },
               { path: '*', Component: NotFoundPage },
             ],

@@ -1,4 +1,7 @@
+import { Link } from 'react-router'
+
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import type { FamilyMember } from '@/features/family/api'
 import { RemoveMemberButton } from '@/features/family/components/remove-member-button'
 import { orderMembers } from '@/features/family/members'
@@ -38,6 +41,16 @@ export function MemberList({ members, currentUserId, isOwner }: MemberListProps)
               <p className="text-sm break-all text-muted-foreground">{email}</p>
             </div>
             <Badge variant={owner ? 'default' : 'secondary'}>{owner ? 'Owner' : 'Member'}</Badge>
+            {member.user_id !== currentUserId && (
+              <Button variant="ghost" size="sm" asChild>
+                <Link
+                  to={`/family/${member.user_id}`}
+                  aria-label={`View timeline: ${first} ${last}`}
+                >
+                  View timeline
+                </Link>
+              </Button>
+            )}
             {isOwner && !owner && (
               <RemoveMemberButton userId={member.user_id} name={`${first} ${last}`} />
             )}

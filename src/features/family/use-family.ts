@@ -28,12 +28,12 @@ export function useFamily() {
   })
 }
 
-export function useMemberProfile(memberId: string) {
+export function useMemberProfile(memberId: string, enabled = true) {
   const userId = useUserId()
   return useQuery({
     queryKey: familyKeys.member(userId, memberId),
     queryFn: () => fetchMemberProfile(memberId),
-    enabled: userId !== '',
+    enabled: enabled && userId !== '',
   })
 }
 
