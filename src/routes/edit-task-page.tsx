@@ -4,6 +4,7 @@ import { FormAlert } from '@/components/form-alert'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/features/auth/use-auth'
 import { toTaskInput } from '@/features/tasks/cache'
 import { TaskForm } from '@/features/tasks/components/task-form'
 import { useTask, useTaskTypes, useUpdateTask } from '@/features/tasks/use-tasks'
@@ -14,12 +15,15 @@ export default function EditTaskPage() {
   useDocumentTitle('Edit task')
 
   const { taskId = '' } = useParams()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const task = useTask(taskId)
   const taskTypes = useTaskTypes()
   const updateTask = useUpdateTask(taskId)
 
   const loading = task.isPending || taskTypes.isPending
+  // FR-19.2: family members can read this task but never edit it; RLS refuses the save too.
+  const someoneElses = Boolean(task.data && task.data.owner_user_id !== user?.id)
   const failed = task.isError || taskTypes.isError
 
   return (
@@ -47,7 +51,8 @@ export default function EditTaskPage() {
           )}
           {failed && <FormAlert>We could not load that task.</FormAlert>}
           {task.data === null && <FormAlert>We could not find that task.</FormAlert>}
-          {task.data && taskTypes.data && (
+          {someoneElses && <FormAlert>You can only edit tasks on your own timeline.</FormAlert>}
+          {task.data && taskTypes.data && !someoneElses && (
             <TaskForm
               taskTypes={taskTypes.data}
               defaultValues={toTaskInput(task.data)}
