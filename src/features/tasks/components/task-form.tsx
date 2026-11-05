@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 
@@ -36,6 +36,7 @@ export function TaskForm({
   onSubmit,
 }: TaskFormProps) {
   const [formError, setFormError] = useState<string | null>(null)
+  const hiddenId = useId()
 
   const {
     register,
@@ -113,6 +114,24 @@ export function TaskForm({
         error={errors.note?.message}
         {...register('note')}
       />
+
+      <div className="flex items-start gap-2">
+        <input
+          id={hiddenId}
+          type="checkbox"
+          aria-describedby={`${hiddenId}-hint`}
+          className="mt-0.5 size-4 accent-primary"
+          {...register('hiddenFromFamily')}
+        />
+        <div className="grid gap-0.5">
+          <label htmlFor={hiddenId} className="text-sm font-medium">
+            Hide from family view
+          </label>
+          <p id={`${hiddenId}-hint`} className="text-xs text-muted-foreground">
+            Family members will not see this task on your timeline.
+          </p>
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={isSubmitting}>

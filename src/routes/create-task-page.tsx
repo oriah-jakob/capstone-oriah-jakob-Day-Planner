@@ -23,6 +23,7 @@ function newTask(taskTypes: TaskType[], date: string): TaskInput {
     endTime: '',
     taskTypeId: type?.id ?? Number.NaN,
     completionStatus: 'not_completed',
+    hiddenFromFamily: false,
   }
 }
 
