@@ -41,6 +41,9 @@ export function TaskItem({ task, editable = false, showDate = false }: TaskItemP
 
       <div className="grid justify-items-start gap-2 sm:justify-items-end">
         <div className="flex flex-wrap items-center gap-2">
+          {editable && task.hidden_from_family && (
+            <Badge variant="outline">Hidden from family</Badge>
+          )}
           <Badge variant="outline">{task.task_types.type_name}</Badge>
           <Badge
             variant="secondary"

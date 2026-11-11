@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import type { CompletionStatus, TaskValues } from '@/lib/validation/task'
 
 const TASK_COLUMNS =
-  'id, owner_user_id, title, note, task_date, start_time, end_time, completion_status, task_type_id, task_types(type_name)'
+  'id, owner_user_id, title, note, task_date, start_time, end_time, completion_status, hidden_from_family, task_type_id, task_types(type_name)'
 
 export async function fetchTaskTypes() {
   const { data, error } = await supabase.from('task_types').select('id, type_name').order('id')
@@ -58,6 +58,7 @@ function toRow(values: TaskValues) {
     end_time: values.endTime,
     task_type_id: values.taskTypeId,
     completion_status: values.completionStatus,
+    hidden_from_family: values.hiddenFromFamily,
   }
 }
 

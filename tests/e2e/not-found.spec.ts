@@ -12,10 +12,10 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('not found page', () => {
   test('renders for an unknown route and keeps navigation available', async ({ page }) => {
-    await page.goto('/family/shared-calendar')
+    await page.goto('/family/shared-calendar/weekly')
 
     await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible()
-    await expect(page.getByText('/family/shared-calendar')).toBeVisible()
+    await expect(page.getByText('/family/shared-calendar/weekly')).toBeVisible()
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
   })
 

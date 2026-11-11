@@ -109,7 +109,8 @@ src/
   components/        layout, shared components, ui/ (shadcn primitives)
   features/auth/     auth context, provider, route guards, change password form
   features/profile/  profile query and update hooks, profile and settings forms
-  features/tasks/    task queries, create form, day timeline and navigation
+  features/family/   family queries, member list, add and remove member forms
+  features/tasks/    task queries, create and edit form, timeline, task list
   hooks/             shared React hooks
   lib/               framework-agnostic helpers, validation schemas
   routes/            one file per page
@@ -119,7 +120,8 @@ supabase/
 tests/
   unit/              Vitest
   e2e/               Playwright, one spec per functional requirement
-  api/               Playwright request specs (API-01 to API-03) and the Postman collection
+  api/               Playwright request specs (API-01 to API-03, family permissions) and the
+                     Postman collection
   smoke/             read-only checks that run against a deployed URL
 ```
 
@@ -153,6 +155,24 @@ back if the save fails, so the screen never shows a status the database does not
 (NFR-12). Row level security turns a delete the caller is not allowed to make into "0 rows"
 rather than an error, so the client treats an empty result as a failed delete.
 
+### How family sharing works
+
+A family is one owner and the accounts they link by email. The `families` and
+`family_members` tables accept no writes from the API at all; creating a family, adding and
+removing members go through `create_family`, `add_family_member` and `remove_family_member`,
+which check who is calling before they change anything. Adding someone gives the same message
+whether the email has no account or the person is already in a family, so the form cannot be
+used to find out who is registered. A trigger keeps `profiles.account_type` in step with the
+membership.
+
+Sharing is read-only by construction: new select policies let family members read each
+other's profiles and tasks, while the insert, update and delete policies on `tasks` still
+match only the owner. Tasks marked "Hide from family view" are left out of the family policy.
+Policies on `family_members` cannot query `family_members` without recursing, so membership
+is read through two `security definer` helpers, `current_family_id()` and
+`shares_family_with()`. The permission tests in `tests/api/api-family.spec.ts` send the
+forbidden requests directly, because a hidden button is not an access control.
+
 ### How My Tasks searches
 
 Search, date, status and type filters run in the database through PostgREST, so only the
@@ -177,7 +197,7 @@ Every end-to-end spec is named after the test case IDs in the project proposal s
 map straight onto the test plan. Accessibility checks run inside the Playwright suite via
 axe-core, covering WCAG 2.1 A/AA.
 
-The API test cases (API-01 to API-03) live in `tests/api/` and run in the same Playwright
+The API test cases (API-01 to API-03) and the family permission checks live in `tests/api/` and run in the same Playwright
 command, using its request API against the `/api` endpoints and Supabase PostgREST. The
 same requests are kept as a Postman collection, `tests/api/remmi.postman_collection.json`,
 with `tests/api/local.postman_environment.json` for the local stack; import both into

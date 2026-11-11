@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Remmi API tests",
-    "description": "API-01 (create account), API-02 (update profile) and API-03 (create task) from the project proposal. Run against the local Supabase stack with `npm run preview` serving the app. The same assertions run in CI from the Playwright specs in tests/api/.",
+    "description": "API-01 (create account), API-02 (update profile), API-03 (create task) and the family permission checks. Run against the local Supabase stack with `npm run preview` serving the app. The same assertions run in CI from the Playwright specs in tests/api/.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -10,7 +10,8 @@
     { "key": "otherEmail", "value": "" },
     { "key": "accessToken", "value": "" },
     { "key": "otherAccessToken", "value": "" },
-    { "key": "userId", "value": "" }
+    { "key": "userId", "value": "" },
+    { "key": "otherUserId", "value": "" }
   ],
   "item": [
     {
@@ -292,7 +293,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('second account created (201)', () => pm.response.to.have.status(201))",
-                  "pm.collectionVariables.set('otherAccessToken', pm.response.json().accessToken)"
+                  "pm.collectionVariables.set('otherAccessToken', pm.response.json().accessToken)",
+                  "pm.collectionVariables.set('otherUserId', pm.response.json().user.id)"
                 ]
               }
             }
@@ -514,6 +516,204 @@
               { "key": "Prefer", "value": "return=representation" }
             ],
             "url": "{{supabaseUrl}}/rest/v1/tasks?select=id&owner_user_id=eq.{{userId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Family permissions (FR-16 to FR-19)",
+      "item": [
+        {
+          "name": "Create a family",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('family created (200)', () => pm.response.to.have.status(200))"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/rpc/create_family",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_family_name\": \"Postman family\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add the second account as a member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('member linked (204)', () => pm.response.to.have.status(204))"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/rpc/add_family_member",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_email\": \"{{otherEmail}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Member reads the owner's tasks",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('readable (200)', () => pm.response.to.have.status(200))",
+                  "pm.test('the shared task is visible (FR-19)', () => pm.expect(pm.response.json().length).to.be.above(0))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{otherAccessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/tasks?owner_user_id=eq.{{userId}}&select=title"
+          },
+          "response": []
+        },
+        {
+          "name": "Member cannot change the owner's task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('request accepted but changes no row (FR-19.2)', () => pm.expect(pm.response.json()).to.eql([]))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{otherAccessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/tasks?owner_user_id=eq.{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Changed by a member\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Member cannot add people",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('only the owner can add (403)', () => pm.response.to.have.status(403))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{otherAccessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/rpc/add_family_member",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_email\": \"{{email}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Owner removes the member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('member removed (204)', () => pm.response.to.have.status(204))"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/rpc/remove_family_member",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_user_id\": \"{{otherUserId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Former member can no longer read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('access ended', () => pm.expect(pm.response.json()).to.eql([]))"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "apikey", "value": "{{anonKey}}" },
+              { "key": "Authorization", "value": "Bearer {{otherAccessToken}}" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "url": "{{supabaseUrl}}/rest/v1/tasks?owner_user_id=eq.{{userId}}&select=title"
           },
           "response": []
         }

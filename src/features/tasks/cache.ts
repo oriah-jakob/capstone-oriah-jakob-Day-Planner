@@ -21,6 +21,7 @@ type StoredTask = {
   end_time: string
   task_type_id: number
   completion_status: string
+  hidden_from_family: boolean
 }
 
 /** Database row to form values; times drop their seconds for `<input type="time">`. */
@@ -33,5 +34,6 @@ export function toTaskInput(task: StoredTask): TaskInput {
     endTime: task.end_time.slice(0, 5),
     taskTypeId: task.task_type_id,
     completionStatus: task.completion_status === 'completed' ? 'completed' : 'not_completed',
+    hiddenFromFamily: task.hidden_from_family,
   }
 }

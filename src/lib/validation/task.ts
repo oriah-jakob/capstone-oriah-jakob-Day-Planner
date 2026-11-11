@@ -34,6 +34,7 @@ export const taskSchema = z
       .int('Choose a task type.')
       .positive('Choose a task type.'),
     completionStatus: z.enum(COMPLETION_STATUSES, { error: 'Choose a status.' }),
+    hiddenFromFamily: z.boolean().default(false),
   })
   .refine((task) => task.endTime > task.startTime, {
     message: 'End time must be after the start time.',

@@ -43,6 +43,7 @@ describe('toTaskInput', () => {
     end_time: '08:15:00',
     task_type_id: 2,
     completion_status: 'completed',
+    hidden_from_family: false,
   }
 
   it('maps a stored task onto the form fields', () => {
@@ -54,6 +55,7 @@ describe('toTaskInput', () => {
       endTime: '08:15',
       taskTypeId: 2,
       completionStatus: 'completed',
+      hiddenFromFamily: false,
     })
   })
 
