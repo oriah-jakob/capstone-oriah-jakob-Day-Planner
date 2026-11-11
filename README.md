@@ -153,6 +153,16 @@ back if the save fails, so the screen never shows a status the database does not
 (NFR-12). Row level security turns a delete the caller is not allowed to make into "0 rows"
 rather than an error, so the client treats an empty result as a failed delete.
 
+### How My Tasks searches
+
+Search, date, status and type filters run in the database through PostgREST, so only the
+matching rows come back. The search looks in the title and the note, case-insensitively;
+`%`, `_` and backslashes are escaped so they match literally, and the text is quoted because
+commas and parentheses are part of PostgREST's `or` syntax. Sorting by title, type, date or
+status happens on the returned rows, with ties falling back to date and time. The filters
+live in the URL, so a reload or a shared link shows the same list, and typing is debounced
+by 300 ms so a word becomes one request rather than one per letter.
+
 ### Serving the API locally
 
 Because Vite does not run Vercel functions, `plugins/api-routes.ts` mounts the same

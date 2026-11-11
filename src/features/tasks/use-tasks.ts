@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useAuth } from '@/features/auth/use-auth'
 import {
@@ -7,10 +7,12 @@ import {
   fetchDayTasks,
   fetchTask,
   fetchTaskTypes,
+  searchTasks,
   setTaskStatus,
   updateTask,
 } from '@/features/tasks/api'
 import { withStatus } from '@/features/tasks/cache'
+import type { TaskFilters } from '@/features/tasks/search'
 import { sortChronologically } from '@/features/tasks/timeline'
 import type { CompletionStatus, TaskValues } from '@/lib/validation/task'
 
@@ -19,6 +21,8 @@ export const taskKeys = {
   owner: (userId: string) => ['tasks', userId] as const,
   day: (userId: string, date: string) => ['tasks', userId, 'day', date] as const,
   detail: (userId: string, id: string) => ['tasks', userId, 'detail', id] as const,
+  search: (userId: string, filters: Omit<TaskFilters, 'sort'>) =>
+    ['tasks', userId, 'search', filters] as const,
 }
 
 function useUserId() {
@@ -36,6 +40,19 @@ export function useDayTasks(date: string) {
     queryKey: taskKeys.day(userId, date),
     queryFn: async () => sortChronologically(await fetchDayTasks(userId, date)),
     enabled: userId !== '',
+  })
+}
+
+/** Sorting is not part of the key: the list re-sorts what it already has. */
+export function useTaskSearch(filters: TaskFilters) {
+  const userId = useUserId()
+  const { sort: _sort, ...query } = filters
+
+  return useQuery({
+    queryKey: taskKeys.search(userId, query),
+    queryFn: () => searchTasks(userId, filters),
+    enabled: userId !== '',
+    placeholderData: keepPreviousData,
   })
 }
 

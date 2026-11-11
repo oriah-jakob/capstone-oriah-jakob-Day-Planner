@@ -1,3 +1,4 @@
+import { searchFilter, type TaskFilters } from '@/features/tasks/search'
 import { supabase } from '@/lib/supabase'
 import type { CompletionStatus, TaskValues } from '@/lib/validation/task'
 
@@ -19,6 +20,20 @@ export async function fetchDayTasks(ownerId: string, date: string) {
     .eq('task_date', date)
     .order('start_time')
     .order('end_time')
+  if (error) throw error
+  return data
+}
+
+/** FR-21 and FR-22: filtering happens in the database; sorting is left to the caller. */
+export async function searchTasks(ownerId: string, filters: TaskFilters) {
+  let request = supabase.from('tasks').select(TASK_COLUMNS).eq('owner_user_id', ownerId)
+  if (filters.date) request = request.eq('task_date', filters.date)
+  if (filters.status) request = request.eq('completion_status', filters.status)
+  if (filters.typeId) request = request.eq('task_type_id', filters.typeId)
+  const search = searchFilter(filters.query)
+  if (search) request = request.or(search)
+
+  const { data, error } = await request.order('task_date').order('start_time')
   if (error) throw error
   return data
 }
