@@ -95,7 +95,7 @@ export default function DashboardPage() {
           )}
 
           {tasks.data && tasks.data.length > 0 && (
-            <DayTimeline tasks={tasks.data} labelledBy={headingId} />
+            <DayTimeline tasks={tasks.data} labelledBy={headingId} editable />
           )}
         </CardContent>
       </Card>

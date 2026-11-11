@@ -42,6 +42,26 @@ npm run dev          # http://localhost:5173
 from `supabase/migrations/` — the migrations are the source of truth, so never change
 the schema by clicking around a dashboard.
 
+### Windows: "ports are not available"
+
+After a reboot, Windows can reserve the port range that holds the Supabase defaults
+(54320 to 54329) and `npm run db:start` fails to bind them. Either restart the NAT service
+in an administrator terminal:
+
+```powershell
+net stop winnat
+net start winnat
+```
+
+or move the local stack for that session and point the app at it:
+
+```bash
+export SUPABASE_API_PORT=44321 SUPABASE_DB_PORT=44322 SUPABASE_DB_SHADOW_PORT=44320
+export SUPABASE_LOCAL_SMTP_PORT=44324 SUPABASE_DB_POOLER_PORT=44329
+export VITE_SUPABASE_URL=http://127.0.0.1:44321
+npm run db:start
+```
+
 ### Environment variables
 
 | Variable                    | Purpose                                                             |
@@ -126,6 +146,12 @@ constraints repeat the form's rules (end after start, title length, known status
 direct API call cannot store what the form would refuse. The dashboard keeps the day in
 a `?date=YYYY-MM-DD` parameter, so a refresh or a shared link opens the same day. Dates
 and times are wall-clock values with no timezone conversion, matching the ERD.
+
+Each task on the timeline can be marked done, edited at `/tasks/:id/edit`, or deleted after a
+confirmation. The done box updates the cached timeline straight away and puts the old value
+back if the save fails, so the screen never shows a status the database does not have
+(NFR-12). Row level security turns a delete the caller is not allowed to make into "0 rows"
+rather than an error, so the client treats an empty result as a failed delete.
 
 ### Serving the API locally
 

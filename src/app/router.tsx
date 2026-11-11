@@ -7,6 +7,7 @@ import { RedirectIfAuthenticated } from '@/features/auth/redirect-if-authenticat
 import { RequireAuth } from '@/features/auth/require-auth'
 import CreateTaskPage from '@/routes/create-task-page'
 import DashboardPage from '@/routes/dashboard-page'
+import EditTaskPage from '@/routes/edit-task-page'
 import FamilyPage from '@/routes/family-page'
 import ForgotPasswordPage from '@/routes/forgot-password-page'
 import LoginPage from '@/routes/login-page'
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
               { index: true, Component: DashboardPage },
               { path: 'tasks', Component: TasksPage },
               { path: 'tasks/new', Component: CreateTaskPage },
+              { path: 'tasks/:taskId/edit', Component: EditTaskPage },
               { path: 'profile', Component: ProfilePage },
               { path: 'family', Component: FamilyPage },
               { path: 'settings', Component: SettingsPage },

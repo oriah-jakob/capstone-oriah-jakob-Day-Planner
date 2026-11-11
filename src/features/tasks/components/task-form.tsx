@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 
 import { FormAlert } from '@/components/form-alert'
 import { SelectField } from '@/components/select-field'
@@ -9,7 +9,6 @@ import { TextField } from '@/components/text-field'
 import { TextareaField } from '@/components/textarea-field'
 import { Button } from '@/components/ui/button'
 import type { TaskType } from '@/features/tasks/api'
-import { useCreateTask } from '@/features/tasks/use-tasks'
 import { toUserMessage } from '@/lib/errors'
 import {
   TASK_NOTE_MAX_LENGTH,
@@ -18,20 +17,25 @@ import {
   type TaskValues,
 } from '@/lib/validation/task'
 
-type CreateTaskFormProps = {
+type TaskFormProps = {
   taskTypes: TaskType[]
-  initialDate: string
+  defaultValues: TaskInput
+  submitLabel: string
+  pendingLabel: string
+  cancelTo: string
+  onSubmit: (values: TaskValues) => Promise<void>
 }
 
-const DEFAULT_TYPE_NAME = 'Personal'
-
-/** FR-11: create a task. Values stay in the form until the insert succeeds (NFR-12). */
-export function CreateTaskForm({ taskTypes, initialDate }: CreateTaskFormProps) {
-  const navigate = useNavigate()
-  const createTask = useCreateTask()
+/** FR-11 and FR-13. Values stay in the form until the save succeeds (NFR-12). */
+export function TaskForm({
+  taskTypes,
+  defaultValues,
+  submitLabel,
+  pendingLabel,
+  cancelTo,
+  onSubmit,
+}: TaskFormProps) {
   const [formError, setFormError] = useState<string | null>(null)
-
-  const defaultType = taskTypes.find((type) => type.type_name === DEFAULT_TYPE_NAME) ?? taskTypes[0]
 
   const {
     register,
@@ -39,29 +43,20 @@ export function CreateTaskForm({ taskTypes, initialDate }: CreateTaskFormProps) 
     formState: { errors, isSubmitting },
   } = useForm<TaskInput, unknown, TaskValues>({
     resolver: zodResolver(taskSchema),
-    defaultValues: {
-      title: '',
-      note: '',
-      taskDate: initialDate,
-      startTime: '',
-      endTime: '',
-      taskTypeId: defaultType?.id ?? Number.NaN,
-      completionStatus: 'not_completed',
-    },
+    defaultValues,
   })
 
-  const onSubmit = handleSubmit(async (values) => {
+  const submit = handleSubmit(async (values) => {
     setFormError(null)
     try {
-      const task = await createTask.mutateAsync(values)
-      await navigate(`/?date=${task.task_date}`)
+      await onSubmit(values)
     } catch (error) {
       setFormError(toUserMessage(error))
     }
   })
 
   return (
-    <form onSubmit={(event) => void onSubmit(event)} noValidate className="grid gap-4">
+    <form onSubmit={(event) => void submit(event)} noValidate className="grid gap-4">
       {formError && <FormAlert>{formError}</FormAlert>}
 
       <TextField label="Task title" error={errors.title?.message} {...register('title')} />
@@ -121,10 +116,10 @@ export function CreateTaskForm({ taskTypes, initialDate }: CreateTaskFormProps) 
 
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating…' : 'Create Task'}
+          {isSubmitting ? pendingLabel : submitLabel}
         </Button>
         <Button variant="outline" asChild>
-          <Link to={`/?date=${initialDate}`}>Cancel</Link>
+          <Link to={cancelTo}>Cancel</Link>
         </Button>
       </div>
     </form>

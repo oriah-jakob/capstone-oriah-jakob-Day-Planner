@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { expectNoAccessibilityViolations } from './utils/a11y'
 import { registerUser } from './utils/auth'
 
-/** FR-4 timeline and tasks: F4-01, F4-02, F4-03, F4-07 and F4-08. */
+/** FR-4 timeline and tasks: F4-01 to F4-08. */
 
 const DAY = '2026-09-16'
 const NEXT_DAY = '2026-09-17'
@@ -114,6 +114,121 @@ test.describe('F4-03 create an invalid task', () => {
   })
 })
 
+test.describe('F4-04 edit a task', () => {
+  test('saves a new title, time and note that survive a refresh', async ({ page }) => {
+    await createTask(page, { title: 'Gym', start: '07:00', end: '08:00' })
+
+    await page.getByRole('link', { name: 'Edit Gym' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Edit task' })).toBeVisible()
+    await expect(page.getByLabel('Task title')).toHaveValue('Gym')
+    await expect(page.getByLabel('Start time')).toHaveValue('07:00')
+
+    await page.getByLabel('Task title').fill('Evening gym')
+    await page.getByLabel('Start time').fill('18:00')
+    await page.getByLabel('End time').fill('19:15')
+    await page.getByLabel('Notes (optional)').fill('Upper body')
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await expect(page).toHaveURL(new RegExp(`\\?date=${DAY}$`))
+
+    await page.reload()
+    await expect(timelineItems(page)).toHaveCount(1)
+    const item = timelineItem(page, 'Evening gym')
+    await expect(item).toContainText('6:00 PM')
+    await expect(item).toContainText('7:15 PM')
+    await expect(item).toContainText('Upper body')
+  })
+
+  test('moves a task to another day', async ({ page }) => {
+    await createTask(page, { title: 'Dentist', start: '10:00', end: '11:00' })
+
+    await page.getByRole('link', { name: 'Edit Dentist' }).click()
+    await page.getByLabel('Date', { exact: true }).fill(NEXT_DAY)
+    await page.getByRole('button', { name: 'Save changes' }).click()
+
+    await expect(page).toHaveURL(new RegExp(`\\?date=${NEXT_DAY}$`))
+    await expect(timelineItem(page, 'Dentist')).toBeVisible()
+    await page.getByRole('button', { name: 'Previous day' }).click()
+    await expect(page.getByText('Nothing is scheduled for this day.')).toBeVisible()
+  })
+
+  test('blocks an invalid edit and keeps what was typed (NFR-12)', async ({ page }) => {
+    await createTask(page, { title: 'Gym', start: '07:00', end: '08:00' })
+
+    await page.getByRole('link', { name: 'Edit Gym' }).click()
+    await page.getByLabel('Task title').fill('Gym, but later')
+    await page.getByLabel('End time').fill('06:00')
+    await page.getByRole('button', { name: 'Save changes' }).click()
+
+    await expect(page.getByRole('alert')).toHaveText('End time must be after the start time.')
+    await expect(page.getByLabel('Task title')).toHaveValue('Gym, but later')
+
+    await page.goto(`/?date=${DAY}`)
+    await expect(timelineItem(page, 'Gym')).toContainText('8:00 AM')
+    await expect(page.getByText('Gym, but later')).toHaveCount(0)
+  })
+})
+
+test.describe('F4-05 delete a task', () => {
+  test('removes the task once confirmed, and it does not come back', async ({ page }) => {
+    await createTask(page, { title: 'Laundry', start: '10:00', end: '11:00' })
+
+    await page.getByRole('button', { name: 'Delete Laundry' }).click()
+    const dialog = page.getByRole('alertdialog', { name: 'Delete this task?' })
+    await expect(dialog).toContainText('Laundry')
+    await dialog.getByRole('button', { name: 'Delete task' }).click()
+
+    await expect(dialog).toBeHidden()
+    await expect(page.getByText('Nothing is scheduled for this day.')).toBeVisible()
+    await page.reload()
+    await expect(page.getByText('Nothing is scheduled for this day.')).toBeVisible()
+  })
+
+  test('keeps the task when the delete is cancelled', async ({ page }) => {
+    await createTask(page, { title: 'Laundry', start: '10:00', end: '11:00' })
+
+    await page.getByRole('button', { name: 'Delete Laundry' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click()
+
+    await page.reload()
+    await expect(timelineItem(page, 'Laundry')).toBeVisible()
+  })
+})
+
+test.describe('F4-06 mark complete and incomplete', () => {
+  test('saves the status and keeps it after a refresh', async ({ page }) => {
+    await createTask(page, { title: 'Read', start: '20:00', end: '21:00' })
+    const done = page.getByRole('checkbox', { name: 'Done: Read' })
+
+    await done.check()
+    await expect(timelineItem(page, 'Read')).toContainText('Completed')
+    await expect(page.getByText('1 task scheduled, 1 completed.')).toBeVisible()
+    await page.reload()
+    await expect(done).toBeChecked()
+
+    await done.uncheck()
+    await expect(timelineItem(page, 'Read')).toContainText('Not completed')
+    await page.reload()
+    await expect(done).not.toBeChecked()
+  })
+
+  test('puts the status back when the save fails (NFR-12)', async ({ page }) => {
+    await createTask(page, { title: 'Read', start: '20:00', end: '21:00' })
+    await page.route('**/rest/v1/tasks?**', (route) =>
+      route.request().method() === 'PATCH'
+        ? route.fulfill({ status: 500, body: '{}' })
+        : route.continue(),
+    )
+
+    await page.getByRole('checkbox', { name: 'Done: Read' }).click()
+
+    await expect(page.getByRole('alert')).toHaveText('We could not save that change.')
+    await expect(page.getByRole('checkbox', { name: 'Done: Read' })).not.toBeChecked()
+    await page.unroute('**/rest/v1/tasks?**')
+    await page.reload()
+    await expect(timelineItem(page, 'Read')).toContainText('Not completed')
+  })
+})
+
 test.describe('F4-07 day navigation', () => {
   test('moves between days and keeps the day across a refresh', async ({ page }) => {
     await createTask(page, { title: 'Wednesday task', start: '09:00', end: '10:00' })
@@ -186,6 +301,19 @@ test.describe('accessibility', () => {
 
     await page.getByRole('button', { name: 'Create Task' }).click()
     await expect(page.getByText('Title is required.')).toBeVisible()
+    await expectNoAccessibilityViolations(page)
+  })
+
+  test('the edit page and the delete dialog have no violations', async ({ page }) => {
+    await createTask(page, { title: 'Gym', start: '07:00', end: '08:00' })
+
+    await page.getByRole('button', { name: 'Delete Gym' }).click()
+    await expect(page.getByRole('alertdialog')).toBeVisible()
+    await expectNoAccessibilityViolations(page)
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click()
+
+    await page.getByRole('link', { name: 'Edit Gym' }).click()
+    await expect(page.getByLabel('Task title')).toHaveValue('Gym')
     await expectNoAccessibilityViolations(page)
   })
 
